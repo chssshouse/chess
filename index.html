@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>10x10 변형 체스</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="start-screen">
+        <div class="start-container">
+            <h1>10x10 변형 체스</h1>
+            
+            <div class="setting-section">
+                <h2>게임 모드</h2>
+                <div class="mode-options">
+                    <button data-mode="standard" class="mode-btn selected">일반 체스</button>
+                    <button data-mode="variant" class="mode-btn">변형 체스</button>
+                </div>
+            </div>
+
+            <div class="setting-section">
+                <h2>게임 시간</h2>
+                <div class="time-options">
+                    <button data-time="600" class="time-btn selected">10분</button>
+                    <button data-time="180" class="time-btn">3분</button>
+                    <button data-time="300" class="time-btn">5분</button>
+                </div>
+            </div>
+
+            <div class="variant-info hidden" id="variant-info">
+                <h2>변형 체스 규칙</h2>
+                <div class="rules-list">
+                    <div class="rule-item">코끼리: 앞1칸 + 좌우1~2칸 점프</div>
+                    <div class="rule-item">아마존: 퀸 + 나이트 조합</div>
+                    <div class="rule-item">캐논: 킹 + 룩 조합</div>
+                    <div class="rule-item">지라프: 나이트-비숍 교대 이동</div>
+                </div>
+            </div>
+
+            <button id="start-game-btn" class="start-game-btn">게임 시작</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="hidden">
+        <div class="game-header">
+            <button id="back-to-menu" class="back-btn">← 메뉴</button>
+            <div class="game-info">
+                <span id="current-mode-display">일반 체스</span>
+                <span id="current-time-display">10분</span>
+            </div>
+        </div>
+
+        <div id="chessboard-container">
+            <div class="player-info black-player">
+                <div class="player-name">흑</div>
+                <div class="timer-container">
+                    <div class="timer-display black-timer">10:00</div>
+                </div>
+            </div>
+            
+            <div id="chessboard"></div>
+            
+            <div class="player-info white-player">
+                <div class="player-name">백</div>
+                <div class="timer-container">
+                    <div class="timer-display white-timer">10:00</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div id="check-status-display" class="status-display">게임 준비</div>
+        </div>
+
+        <div class="game-controls">
+            <button id="surrender-btn" class="control-btn">기권</button>
+            <button id="restart-game-btn" class="control-btn">재시작</button>
+        </div>
+
+        <div id="game-over-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="game-result-text">게임 종료</h2>
+                <div class="modal-buttons">
+                    <button id="restart-btn" class="modal-btn primary">새 게임</button>
+                    <button id="menu-btn" class="modal-btn secondary">메뉴</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="promotion-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>폰 승진</h2>
+                <p>어떤 기물로 승진시킬까요?</p>
+                <div class="promotion-pieces">
+                    <div class="piece-option" data-piece-type="q">
+                        <div class="piece-preview wq"></div>
+                        <span>퀸</span>
+                    </div>
+                    <div class="piece-option" data-piece-type="r">
+                        <div class="piece-preview wr"></div>
+                        <span>룩</span>
+                    </div>
+                    <div class="piece-option" data-piece-type="b">
+                        <div class="piece-preview wb"></div>
+                        <span>비숍</span>
+                    </div>
+                    <div class="piece-option" data-piece-type="n">
+                        <div class="piece-preview wn"></div>
+                        <span>나이트</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="variant.js"></script>
+</body>
+</html>
