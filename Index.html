@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>멀티플레이어 바카라</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #165331;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 700px;
+            margin: 20px auto;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        }
+        .status-board {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .timer-badge {
+            background: #e74c3c;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .card-table {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 15px;
+        }
+        .card-zone { flex: 1; }
+        .card-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            min-height: 120px;
+            margin-top: 10px;
+        }
+        
+        .card {
+            width: 70px;
+            height: 110px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            box-sizing: border-box;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transform: translateY(-50px) rotate(-10deg);
+            opacity: 0;
+            animation: dealCard 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        
+        @keyframes dealCard {
+            100% { transform: translateY(0) rotate(0); opacity: 1; }
+        }
+        
+        .card.red { color: #e74c3c; }
+        .card.black { color: #2c3e50; }
+        .card .suit { font-size: 1.5rem; text-align: center; }
+
+        .game-table {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 25px 0;
+        }
+        .bet-zone {
+            flex: 1;
+            margin: 0 8px;
+            padding: 15px;
+            border: 3px solid #fff;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .bet-zone.player { border-color: #3498db; }
+        .bet-zone.tie { border-color: #f1c40f; }
+        .bet-zone.banker { border-color: #e74c3c; }
+        
+        button {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.1s;
+            margin-top: 10px;
+            width: 100%;
+        }
+        button:hover { opacity: 0.9; }
+        button:disabled {
+            background-color: #7f8c8d !important;
+            cursor: not-allowed;
+            box-shadow: none !important;
+        }
+
+        .result-display {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin: 20px 0;
+            min-height: 40px;
+            color: #f1c40f;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+        .score-badge {
+            background: rgba(0,0,0,0.6);
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🌐 멀티 바카라 테이블</h1>
+    
+    <div class="status-board">
+        <div>💰 소지금: <span id="balance">0</span>원</div>
+        <div class="timer-badge">⏱ 남은 시간: <span id="timer">15</span>초</div>
+        <div>💸 내 베팅: <span id="total-bet">0</span>원</div>
+    </div>
+
+    <div class="card-table">
+        <div class="card-zone">
+            <h3>PLAYER <span id="player-score" class="score-badge">0점</span></h3>
+            <div id="player-cards" class="card-container"></div>
+        </div>
+        <div class="card-zone">
+            <h3>BANKER <span id="banker-score" class="score-badge">0점</span></h3>
+            <div id="banker-cards" class="card-container"></div>
+        </div>
+    </div>
+
+    <div id="result" class="result-display">로딩 중... 서버에 접속하고 있습니다.</div>
+
+    <div class="game-table">
+        <div class="bet-zone player">
+            <h2>PLAYER</h2>
+            <div>베팅: <span id="bet-player">0</span>원</div>
+            <button class="bet-btn" onclick="placeBet('player')">🪙 +1,000원</button>
+        </div>
+
+        <div class="bet-zone tie">
+            <h2>TIE</h2>
+            <div>베팅: <span id="bet-tie">0</span>원</div>
+            <button class="bet-btn" onclick="placeBet('tie')">🪙 +1,000원</button>
+        </div>
+
+        <div class="bet-zone banker">
+            <h2>BANKER</h2>
+            <div>베팅: <span id="bet-banker">0</span>원</div>
+            <button class="bet-btn" onclick="placeBet('banker')">🪙 +1,000원</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const socket = io(); // 서버 연결
+    let currentBets = { player: 0, tie: 0, banker: 0 };
+
+    // 카드 HTML 생성 헬퍼
+    function createCardHTML(card) {
+        return `
+            <div class="card ${card.suit.color}">
+                <div>${card.value}</div>
+                <div class="suit">${card.suit.icon}</div>
+                <div style="transform: rotate(180deg);">${card.value}</div>
+            </div>
+        `;
+    }
+
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    function toggleBetButtons(disabled) {
+        document.querySelectorAll('.bet-btn').forEach(btn => btn.disabled = disabled);
+    }
+
+    // --- 소켓 이벤트 리스너 ---
+
+    // 초기 접속 데이터 수신
+    socket.on('initData', (data) => {
+        document.getElementById('balance').innerText = data.balance.toLocaleString();
+        document.getElementById('result').innerText = data.gameState === 'betting' ? "칩을 걸어주세요!" : "게임 진행 중입니다. 잠시 대기하세요.";
+        toggleBetButtons(data.gameState !== 'betting');
+    });
+
+    // 베팅 처리 응답
+    socket.on('betConfirmed', (data) => {
+        currentBets = data.bets;
+        document.getElementById('balance').innerText = data.balance.toLocaleString();
+        document.getElementById('bet-player').innerText = currentBets.player.toLocaleString();
+        document.getElementById('bet-tie').innerText = currentBets.tie.toLocaleString();
+        document.getElementById('bet-banker').innerText = currentBets.banker.toLocaleString();
+        document.getElementById('total-bet').innerText = (currentBets.player + currentBets.tie + currentBets.banker).toLocaleString();
+    });
+
+    // 에러 메시지
+    socket.on('errorMsg', (msg) => alert(msg));
+
+    // 서버 타이머 갱신
+    socket.on('timerUpdate', (time) => {
+        document.getElementById('timer').innerText = time;
+    });
+
+    // 게임 상태 변경 (베팅 마감 / 시작)
+    socket.on('gameStateChange', (state) => {
+        if (state === 'dealing') {
+            toggleBetButtons(true);
+            document.getElementById('result').innerText = "🚫 베팅 마감! 딜러가 카드를 나눕니다.";
+        } else if (state === 'betting') {
+            toggleBetButtons(false);
+            // 새 판 세팅 초기화
+            currentBets = { player: 0, tie: 0, banker: 0 };
+            document.getElementById('bet-player').innerText = '0';
+            document.getElementById('bet-tie').innerText = '0';
+            document.getElementById('bet-banker').innerText = '0';
+            document.getElementById('total-bet').innerText = '0';
+            document.getElementById('player-cards').innerHTML = '';
+            document.getElementById('banker-cards').innerHTML = '';
+            document.getElementById('player-score').innerText = '0점';
+            document.getElementById('banker-score').innerText = '0점';
+            document.getElementById('result').innerText = "새로운 게임이 시작되었습니다. 칩을 걸어주세요!";
+        }
+    });
+
+    // 카드 분배 애니메이션 수신
+    socket.on('dealCards', async (cards) => {
+        const playerZone = document.getElementById('player-cards');
+        const bankerZone = document.getElementById('banker-cards');
+        
+        await sleep(500);
+        playerZone.innerHTML += createCardHTML(cards.p1);
+        await sleep(500);
+        bankerZone.innerHTML += createCardHTML(cards.b1);
+        await sleep(500);
+        playerZone.innerHTML += createCardHTML(cards.p2);
+        document.getElementById('player-score').innerText = cards.pScore + "점";
+        await sleep(500);
+        bankerZone.innerHTML += createCardHTML(cards.b2);
+        document.getElementById('banker-score').innerText = cards.bScore + "점";
+    });
+
+    // 최종 결과 수신
+    socket.on('gameResult', (data) => {
+        let text = "";
+        if (data.winResult === "player") text = `🔵 플레이어 승리!`;
+        else if (data.winResult === "banker") text = `🔴 뱅커 승리!`;
+        else text = `🟡 무승부(TIE)!`;
+
+        if (data.winnings > 0) text += ` 🎉 +${data.winnings.toLocaleString()}원 당첨!`;
+        else text += ` 💸 낙첨되었습니다.`;
+
+        document.getElementById('result').innerText = text;
+        document.getElementById('balance').innerText = data.balance.toLocaleString();
+    });
+
+    // 버튼 클릭 시 서버로 전송
+    function placeBet(type) {
+        socket.emit('placeBet', type);
+    }
+</script>
+
+</body>
+</html>
